@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="th"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ผีอำ — Animated Explainer</title>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080d18;--card:#121a30;--line:#25325a;--ink:#eef2ff;--dim:#93a0c8;--hot:#ffd23f;--cy:#35e0ff}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Prompt,Kanit,'Noto Sans Thai',system-ui,sans-serif}
+body{min-height:100dvh;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+main{max-width:640px;margin:0 auto;padding:14px}
+h1{font-size:20px;margin:6px 0 2px;font-weight:800}
+.sub{color:var(--dim);font-size:13px;margin:0 0 12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin:10px 0}
+.card h2{font-size:15px;margin:0 0 8px;font-weight:700}
+button,.btn{min-height:48px;border-radius:12px;border:1px solid var(--line);background:#1b2750;color:var(--ink);font:600 14px Prompt,sans-serif;padding:0 14px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+button:focus-visible,.btn:focus-visible{outline:3px solid var(--cy)}
+.pri{background:var(--hot);color:#1a1405;border-color:var(--hot)}
+.on{background:var(--cy);color:#04202a;border-color:var(--cy)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row>*{flex:0 0 auto}
+.info{font-size:12px;color:var(--dim);line-height:1.6;margin-top:8px;word-break:break-all}
+.stage{display:flex;justify-content:center;background:#000;border-radius:12px;overflow:hidden}
+canvas{max-width:100%;max-height:62dvh;width:auto;height:auto;display:block}
+input[type=range]{flex:1 1 120px;min-width:100px;height:48px;accent-color:var(--hot)}
+#err{display:none;background:#4a1020;border:1px solid #ff5470;border-radius:12px;padding:10px;font-size:13px;margin:10px 0}
+.bar{height:12px;border-radius:6px;background:#0b1226;overflow:hidden;margin:8px 0}
+.bar i{display:block;height:100%;width:0;background:var(--cy)}
+.sr{display:flex;gap:6px;align-items:center;font-size:12px;padding:6px 0;border-top:1px solid var(--line)}
+.sr b{flex:1 1 auto;font-weight:600}.sr span{color:var(--dim)}
+.sr button{min-height:48px;min-width:56px;padding:0 8px}
+video{width:100%;max-height:60dvh;border-radius:12px;background:#000}
+details summary{min-height:48px;display:flex;align-items:center;font-weight:700;font-size:15px;cursor:pointer}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style></head><body><main>
+<h1>ผีหลอกหรือผีอำเนี่ยยยย! ทำไมขยับไม่ได้?</h1>
+<p class="sub">2D Shonen anime explainer — เสียงพากย์ของคุณเป็นตัวกำหนดเวลา</p>
+<div id="err" role="alert"></div>
+
+<div class="card"><h2>1 · นำเข้าเสียงพากย์</h2>
+<label class="btn pri" for="file">เลือกไฟล์เสียง (MP3)</label>
+<input id="file" type="file" accept="audio/*,.mp3" hidden>
+<div class="info" id="finfo">ยังไม่ได้เลือกไฟล์ — เวลาโดยประมาณ ยังไม่ซิงก์กับเสียงจริง</div></div>
+
+<div class="card"><h2>2 · ตัวอย่าง</h2>
+<div class="stage"><canvas id="c" width="720" height="1280"></canvas></div>
+<div class="row" style="margin-top:8px">
+<button id="pp" class="pri" aria-label="เล่น">▶ เล่น</button>
+<input id="seek" type="range" min="0" max="1000" value="0" aria-label="แถบเวลา">
+<span id="tm" style="font-size:13px;min-width:84px">0:00 / 0:00</span>
+<button id="mute">🔊</button><button id="fs">เต็มจอ</button><button id="safe">Safe zone</button></div>
+<div class="row" id="chips" style="margin-top:8px"></div>
+<div class="info" id="sstat"></div></div>
+
+<div class="card"><h2>3 · เลือกขนาดวิดีโอ</h2>
+<div class="row" id="fmts"></div>
+<div class="row" style="margin-top:8px" id="qs"></div>
+<div class="info" id="osz"></div></div>
+
+<details class="card"><summary>ปรับจุดซิงก์ฉาก</summary><div id="sync"></div>
+<div class="info">ระบบหาจุดตัดฉากจากช่วงเงียบของเสียงจริง (ไม่ใช่ forced alignment) OUTPUT G ไม่มีบทพูดเต็ม จึงไม่แสดงคำบรรยาย เพื่อไม่แต่งข้อความเอง</div></details>
+
+<div class="card"><h2>4 · สร้างวิดีโอ</h2>
+<div class="row"><button id="exp" class="pri">สร้างวิดีโอ</button><button id="cancel" disabled>ยกเลิก</button></div>
+<div class="bar"><i id="pb"></i></div><div class="info" id="pinfo">ต้องเปิดหน้านี้ค้างไว้จนเสร็จ (บันทึกแบบเรียลไทม์)</div></div>
+
+<div class="card" id="res" style="display:none"><h2>5 · ผลลัพธ์</h2>
+<video id="rv" controls playsinline></video><div class="info" id="rinfo"></div>
+<div class="row" style="margin-top:8px"><button id="rplay">เล่นวิดีโอ</button><button id="share" class="pri">บันทึก / แชร์</button><button id="again">สร้างใหม่</button></div>
+<div class="info">บน iPhone ให้เลือก “บันทึกวิดีโอ” หรือ “บันทึกลงไฟล์” ใน Share Sheet — ระบบไม่บันทึกลง Photos อัตโนมัติ</div></div>
+</main>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const G={scenes:['เปิดเรื่อง — ห้องนอนกลางคืน','ตื่นแต่ขยับไม่ได้','เงาปริศนาปลายเตียง','เฉลย Sleep Paralysis','REM Sleep','สมองตื่นก่อนร่างกาย','ประสบการณ์หลอนและภาพเงา','สรุปและปิดเรื่อง'],
+base:['#0f1236','#120d24','#0f1236','#1b0f3a','#07102a','#07102a','#0f1236','#ffc48a']};
+const FM={'9:16':[1080,1920],'4:5':[1080,1350],'1:1':[1080,1080],'16:9':[1920,1080]};
+const C=$('c'),X=C.getContext('2d');
+let fmt='9:16',q=1080,buf=null,env=null,envP=1,dur=89.89,starts=[],stat=[],actx,gPrev,gExp,dest,src,playing=false,startOff=0,startCtx=0,muted=false,exporting=false,showSafe=false,cancelFlag=false,blob=null,rurl=null,wake=null;
+const FONT="'Prompt',Kanit,'Noto Sans Thai',sans-serif";
+const err=m=>{const e=$('err');e.textContent=m;e.style.display=m?'block':'none'};
+const dims=v=>{const[w,h]=FM[fmt],k=v==720?720/Math.min(w,h):1;return[Math.round(w*k/2)*2,Math.round(h*k/2)*2]};
+const fmtT=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
+function defSync(){starts=Array.from({length:8},(_,i)=>i*dur/8);stat=Array(8).fill('ยังไม่ซิงก์ (โดยประมาณ)')}
+defSync();
+
+/* ---------- audio ---------- */
+function ensureCtx(){if(actx)return;actx=new(window.AudioContext||window.webkitAudioContext)();gPrev=actx.createGain();gExp=actx.createGain();
+ const cp=actx.createDynamicsCompressor();gPrev.connect(cp);cp.connect(actx.destination);dest=actx.createMediaStreamDestination();gExp.connect(dest)}
+function now(){return playing?startOff+(actx.currentTime-startCtx):startOff}
+function stopSrc(){if(src){try{src.stop()}catch(e){}src.disconnect();src=null}}
+function play(from){ensureCtx();actx.resume();stopSrc();if(from>=dur-.05)from=0;startOff=from;startCtx=actx.currentTime;
+ if(buf){src=actx.createBufferSource();src.buffer=buf;src.connect(gPrev);src.connect(gExp);src.start(0,from)}playing=true;ui()}
+function pause(at){const t=at==null?now():at;stopSrc();startOff=Math.max(0,Math.min(dur,t));playing=false;ui()}
+function seek(t){t=Math.max(0,Math.min(dur-.01,t));if(playing)play(t);else{startOff=t}}
+async function loadFile(f){
+ try{err('');$('finfo').textContent='กำลังอ่านไฟล์…';ensureCtx();const ab=await f.arrayBuffer();
+  $('finfo').textContent='กำลัง decode เสียง…';buf=await actx.decodeAudioData(ab);dur=buf.duration;
+  $('finfo').textContent='กำลังวิเคราะห์เสียง…';await new Promise(r=>setTimeout(r,30));
+  const r=analyze(buf);buildSync(r);
+  $('finfo').innerHTML=`${f.name}<br>${(f.size/1048576).toFixed(2)} MB · ${f.type||'audio'} · ${dur.toFixed(2)} วินาที · ${buf.sampleRate} Hz · ${buf.numberOfChannels} ch<br>วิเคราะห์เสร็จ: พบช่วงเงียบ ${r.ps.length} จุด — สถานะ approximate (ซิงก์โดยประมาณ ตรวจและปรับได้ในแผงซิงก์)`;
+  pause(0);renderSync();ui()}
+ catch(e){buf=null;dur=89.89;defSync();renderSync();err('อ่านหรือ decode ไฟล์เสียงไม่ได้ ไฟล์อาจเสียหรือเบราว์เซอร์ไม่รองรับ ลองไฟล์ MP3 หรือ WAV อื่น')}}
+function analyze(b){const sr=b.sampleRate,hop=Math.round(sr*.02),n=Math.floor(b.length/hop),ch=b.numberOfChannels,d=[];
+ for(let c=0;c<ch;c++)d.push(b.getChannelData(c));env=new Float32Array(n);
+ for(let i=0;i<n;i++){let s=0;for(let c=0;c<ch;c++){const a=d[c];for(let j=i*hop;j<(i+1)*hop;j++)s+=a[j]*a[j]}env[i]=Math.sqrt(s/(hop*ch))}
+ envP=Float32Array.from(env).sort()[Math.floor(n*.95)]||1e-6;const thr=envP*.08;
+ let a=0,z=n-1;while(a<n&&env[a]<thr)a++;while(z>a&&env[z]<thr)z--;
+ const ps=[];let run=0;for(let i=a;i<=z;i++){if(env[i]<thr)run++;else{if(run>=11)ps.push((i-run/2)*.02);run=0}}
+ return{a:a*.02,z:(z+1)*.02,ps}}
+function buildSync(r){const span=Math.max(1,r.z-r.a);starts=[0];stat=['เริ่มต้น'];
+ for(let i=1;i<8;i++){const tg=r.a+span*i/8;let best=null,bd=1e9;
+  for(const p of r.ps){const d=Math.abs(p-tg);if(d<bd&&p>starts[i-1]+1){bd=d;best=p}}
+  if(best!==null&&bd<span/16){starts.push(best);stat.push('approximate')}else{starts.push(Math.max(tg,starts[i-1]+1));stat.push('needs adjustment')}}}
+const lv=t=>env?Math.min(1,env[Math.min(env.length-1,Math.floor(t/.02))]/envP):.3+.2*Math.sin(t*5);
+const sceneAt=t=>{let i=0;for(let k=0;k<8;k++)if(t>=starts[k])i=k;return i};
+
+/* ---------- drawing helpers (stage 1080x1920) ---------- */
+const rnd=i=>{const x=Math.sin(i*127.1+311.7)*43758.5453;return x-Math.floor(x)};
+const ez=x=>x<0?0:x>1?1:x*x*(3-2*x);
+const ol=(w=7)=>{X.lineWidth=w;X.strokeStyle='#0a0a14';X.lineJoin='round';X.lineCap='round'};
+const fs=c=>{X.fillStyle=c;X.fill();ol();X.stroke()};
+const rr=(x,y,w,h,r)=>{X.beginPath();X.roundRect?X.roundRect(x,y,w,h,r):X.rect(x,y,w,h)};
+const el=(x,y,a,b)=>{X.beginPath();X.ellipse(x,y,a,b,0,0,7)};
+const cam=(z,cx,cy,sx=0,sy=0)=>{X.translate(cx+sx,cy+sy);X.scale(z,z);X.translate(-cx,-cy)};
+function txt(s,x,y,size,fill,stroke){X.font=`800 ${size}px ${FONT}`;X.textAlign='center';X.textBaseline='middle';
+ if(stroke){X.lineWidth=size/8;X.strokeStyle=stroke;X.lineJoin='round';X.strokeText(s,x,y)}X.fillStyle=fill;X.fillText(s,x,y)}
+function chip(s,x,y,w,col){ol(6);rr(x-w/2,y-42,w,84,42);fs(col);txt(s,x,y+2,40,'#101010')}
+function rays(cx,cy,t,n,r0,col,al){X.fillStyle=col;X.globalAlpha=al;const f=Math.floor(t*12);
+ for(let i=0;i<n;i++){const a=i/n*6.283+rnd(i+f)*.12,w=.025+rnd(i*3+f)*.03,r1=r0+rnd(i+5)*180;
+  X.beginPath();X.moveTo(cx+Math.cos(a-w)*2600,cy+Math.sin(a-w)*2600);X.lineTo(cx+Math.cos(a+w)*2600,cy+Math.sin(a+w)*2600);X.lineTo(cx+Math.cos(a)*r1,cy+Math.sin(a)*r1);X.fill()}X.globalAlpha=1}
+function vig(a){const g=X.createRadialGradient(540,960,400,540,960,1300);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,`rgba(0,0,10,${a})`);X.fillStyle=g;X.fillRect(0,0,1080,1920)}
+function drop(x,y,s){X.beginPath();X.moveTo(x,y-s*1.6);X.bezierCurveTo(x+s,y-s*.4,x+s,y+s,x,y+s);X.bezierCurveTo(x-s,y+s,x-s,y-s*.4,x,y-s*1.6);fs('#9be7ff')}
+
+function room(t,m){const n=m=='n';
+ let g=X.createLinearGradient(0,0,0,1320);g.addColorStop(0,n?'#1b2158':'#ffe2b8');g.addColorStop(1,n?'#0f1236':'#ffc48a');X.fillStyle=g;X.fillRect(0,0,1080,1320);
+ X.fillStyle=n?'#2a1d3a':'#c98a55';X.fillRect(0,1320,1080,600);X.strokeStyle=n?'#1a1226':'#a86d3c';X.lineWidth=4;
+ for(let y=1410;y<1920;y+=90){X.beginPath();X.moveTo(0,y);X.lineTo(1080,y);X.stroke()}
+ X.fillStyle=n?'#3a2a55':'#f2b27a';X.fillRect(0,1290,1080,40);
+ ol();rr(100,300,230,290,10);fs(n?'#3a2a55':'#f2b27a');rr(122,322,186,246,6);fs(n?'#16205a':'#9fe0ff');
+ X.fillStyle=n?'#25306e':'#ffe27a';el(215,470,60,60);X.fill();
+ rr(620,240,380,480,16);fs(n?'#0a1650':'#8fd8ff');
+ X.save();rr(620,240,380,480,16);X.clip();
+ if(n){for(let i=0;i<16;i++){X.fillStyle=`rgba(255,255,220,${.4+.6*Math.abs(Math.sin(t*1.5+i))})`;X.fillRect(630+rnd(i)*360,250+rnd(i+9)*300,5,5)}
+  const mg=X.createRadialGradient(850,380,10,850,380,150);mg.addColorStop(0,'rgba(255,247,200,.9)');mg.addColorStop(1,'rgba(255,247,200,0)');X.fillStyle=mg;X.fillRect(700,230,300,300);
+  X.fillStyle='#fff7c9';el(850,380,62,62);X.fill()}
+ else{X.fillStyle='#ffd23f';el(850,370,72,72);X.fill();X.fillStyle='#fff';for(let i=0;i<3;i++)el(700+((t*12+i*120)%360),560+i*40,70,26),X.fill()}
+ X.restore();X.strokeStyle='#0a0a14';X.lineWidth=8;X.beginPath();X.moveTo(810,240);X.lineTo(810,720);X.moveTo(620,480);X.lineTo(1000,480);X.stroke();
+ const sw=Math.sin(t*1.2)*14;ol();
+ X.beginPath();X.moveTo(580,200);X.lineTo(690,200);X.lineTo(670+sw,740);X.lineTo(580,760);X.closePath();fs(n?'#7a3b8f':'#e56a7f');
+ X.beginPath();X.moveTo(1040,200);X.lineTo(940,200);X.lineTo(960-sw,740);X.lineTo(1040,760);X.closePath();fs(n?'#7a3b8f':'#e56a7f');
+ X.fillStyle=n?'rgba(170,195,255,.10)':'rgba(255,230,150,.22)';X.beginPath();X.moveTo(620,720);X.lineTo(1000,720);X.lineTo(1080,1400);X.lineTo(480,1400);X.fill()}
+function bed(){ol();rr(90,1200,900,230,24);fs('#5b3a2a');rr(70,960,90,470,20);fs('#7a4b34');rr(150,1130,790,130,40);fs('#e8e2f5');rr(180,1050,260,120,50);fs('#fff')}
+function foot(){ol();rr(930,1100,70,330,20);fs('#7a4b34')}
+function blanket(t,up){const b=Math.sin(t*1.6)*6;rr(330,1100-b-(up||0),590,170+b,50);fs('#3b82f6');X.strokeStyle='#8cbcff';X.lineWidth=10;
+ for(const y of[1160,1215]){X.beginPath();X.moveTo(360,y-b);X.lineTo(900,y-b);X.stroke()}}
+function head(cx,cy,r,open,mood,t,sweat,dart=0){ol();
+ el(cx-r,cy+r*.1,r*.18,r*.26);fs('#F0C39F');el(cx+r,cy+r*.1,r*.18,r*.26);fs('#F0C39F');el(cx,cy,r,r*1.05);fs('#F0C39F');
+ X.beginPath();for(let i=0;i<=12;i++){const a=Math.PI+i/12*Math.PI,R=r*(i%2?1.12:1.45);X.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R*.95)}
+ for(let i=12;i>=0;i--){const a=Math.PI+i/12*Math.PI,R=r*(i%2?.6:.86);X.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R)}X.closePath();fs('#111827');
+ const ey=cy+r*.08;
+ for(const s of[-1,1]){const ex=cx+s*r*.4;
+  if(open<.12){X.beginPath();X.arc(ex,ey,r*.2,.15,Math.PI-.15);X.stroke()}
+  else{X.save();el(ex,ey,r*.27,r*.31*open);X.fillStyle='#fff';X.fill();X.clip();X.fillStyle='#2a4fa0';X.beginPath();X.arc(ex+dart,ey,r*.17,0,7);X.fill();
+   X.fillStyle='#0a0a14';X.beginPath();X.arc(ex+dart,ey,mood==1?r*.06:r*.1,0,7);X.fill();X.fillStyle='#fff';X.beginPath();X.arc(ex+dart-r*.05,ey-r*.06,r*.045,0,7);X.fill();X.restore();el(ex,ey,r*.27,r*.31*open);ol(6);X.stroke()}
+  ol(8);X.beginPath();const by=ey-r*.42;if(mood==1){X.moveTo(ex-s*r*.28,by+r*.06);X.lineTo(ex+s*r*.28,by-r*.08)}else{X.moveTo(ex-s*r*.25,by);X.lineTo(ex+s*r*.25,by)}X.stroke()}
+ ol(6);X.beginPath();
+ if(mood==1){el(cx,cy+r*.6,r*.13,r*.17);X.fillStyle='#7a1f2b';X.fill();X.stroke()}
+ else if(mood==2){X.arc(cx,cy+r*.42,r*.22,.2,Math.PI-.2);X.stroke()}
+ else{X.moveTo(cx-r*.15,cy+r*.58);X.lineTo(cx+r*.15,cy+r*.58);X.stroke()}
+ if(sweat)drop(cx+r*.85,cy-r*.3+((t*60)%90),r*.1)}
+function lyingMan(t,open,mood,sweat,dart){X.fillStyle='#164E91';ol();el(380,1150,80,48);fs('#164E91');head(290,1080,92,open,mood,t,sweat,dart)}
+function shade(t,x,y,sc,a,red){if(a<=0)return;X.save();X.globalAlpha=a;X.translate(x+Math.sin(t*1.3)*10,y);X.scale(sc,sc*(1+.03*Math.sin(t*2)));
+ X.fillStyle='#050711';X.strokeStyle='#4a3a8a';X.lineWidth=5;X.beginPath();el(0,-420,70,95);X.fill();X.stroke();
+ X.beginPath();X.moveTo(-80,-340);X.lineTo(80,-340);X.bezierCurveTo(190,-330,200,-120,230,60);X.lineTo(175,70);X.lineTo(130,-60);X.bezierCurveTo(140,140,110,250,120,330);
+ for(let i=5;i>=-5;i--)X.lineTo(i*24,330+(i%2?40:0)+Math.sin(t*3+i)*14);
+ X.lineTo(-120,330);X.bezierCurveTo(-110,250,-140,140,-130,-60);X.lineTo(-175,70);X.lineTo(-230,60);X.bezierCurveTo(-200,-120,-190,-330,-80,-340);X.closePath();X.fill();X.stroke();
+ if(red){const f=.7+.3*Math.sin(t*9);for(const s of[-28,28]){const g=X.createRadialGradient(s,-425,2,s,-425,50);g.addColorStop(0,`rgba(255,40,60,${f})`);g.addColorStop(1,'rgba(255,40,60,0)');X.fillStyle=g;X.fillRect(s-50,-475,100,100);X.fillStyle='#ff2a3a';el(s,-425,12,7);X.fill()}}
+ X.restore()}
+function mist(t){for(let i=0;i<6;i++){X.fillStyle='rgba(200,200,255,.07)';el(((t*20+i*220)%1500)-200,1380+i*35,300,40);X.fill()}}
+function brain(cx,cy,sc,glow,t,pulse){X.save();X.translate(cx,cy);const s=sc*(1+pulse);X.scale(s,s);
+ const g=X.createRadialGradient(0,0,60,0,0,330);g.addColorStop(0,glow);g.addColorStop(1,'rgba(0,0,0,0)');X.fillStyle=g;X.fillRect(-340,-340,680,680);
+ ol(8);el(150,115,70,50);fs('#d96a97');el(-85,0,165,130);fs('#ff8fb8');el(85,0,165,130);fs('#ff8fb8');
+ X.strokeStyle='#e0457b';X.lineWidth=7;for(let i=0;i<7;i++)for(const sg of[-1,1]){X.beginPath();const bx=sg*(20+i*36);X.moveTo(bx,-90+(i%2)*25);X.bezierCurveTo(bx+20,-30,bx-25,30,bx+5,95-(i%3)*15);X.stroke()}
+ ol(8);X.beginPath();X.moveTo(0,-125);X.lineTo(0,125);X.stroke();X.restore()}
+function eyeIcon(x,y,dx){ol();X.beginPath();X.moveTo(x-150,y);X.quadraticCurveTo(x,y-120,x+150,y);X.quadraticCurveTo(x,y+120,x-150,y);fs('#fff');
+ X.fillStyle='#35e0ff';X.beginPath();X.arc(x+dx,y,46,0,7);X.fill();X.fillStyle='#0a0a14';X.beginPath();X.arc(x+dx,y,20,0,7);X.fill()}
+
+/* ---------- scenes ---------- */
+const SC=[
+(t,tp,p)=>{cam(1+.1*p,540,1000);room(t,'n');bed();lyingMan(t,0,0);blanket(t);foot();
+ for(let i=0;i<3;i++){const k=((t*.35+i/3)%1);X.globalAlpha=Math.sin(k*3.14);txt('z',400+i*45+k*40,1000-k*220-i*20,50+i*22,'#cfe0ff','#0a0a14')}X.globalAlpha=1;vig(.5)},
+(t,tp,p)=>{const f=tp<.1;if(f){X.fillStyle='#fff';X.fillRect(0,0,1080,1920)}else{const g=X.createLinearGradient(0,0,0,1920);g.addColorStop(0,'#1a1038');g.addColorStop(1,'#08060f');X.fillStyle=g;X.fillRect(0,0,1080,1920)}
+ X.save();X.translate(rnd(Math.floor(t*25))*8-4,rnd(Math.floor(t*25)+7)*6-3);
+ ol();rr(-30,620,1140,640,40);X.fillStyle='#F0C39F';X.fill();
+ X.beginPath();X.moveTo(-30,640);for(let i=0;i<=10;i++)X.lineTo(-30+i*114,i%2?740:560);X.lineTo(1110,500);X.lineTo(-30,500);X.closePath();fs('#111827');
+ ol(26);for(const s of[-1,1]){X.beginPath();X.moveTo(540+s*430,790);X.lineTo(540+s*80,705);X.stroke()}
+ const open=.12+.88*ez(tp/.6),k=Math.floor(t*6),dx=(rnd(k)-.5)*40;
+ for(const ex of[310,770]){X.save();el(ex,960,190,130*open+4);X.fillStyle='#fff';X.fill();X.clip();X.fillStyle='#2a4fa0';X.beginPath();X.arc(ex+dx,960,100,0,7);X.fill();
+  X.fillStyle='#05050a';X.beginPath();X.arc(ex+dx,960,26+4*Math.sin(t*9),0,7);X.fill();X.fillStyle='#fff';X.beginPath();X.arc(ex+dx-32,925,20,0,7);X.fill();X.restore();
+  el(ex,960,190,130*open+4);ol(12);X.stroke()}
+ X.strokeStyle='rgba(120,70,40,.5)';X.lineWidth=8;X.beginPath();X.moveTo(500,1100);X.quadraticCurveTo(540,1160,580,1100);X.stroke();
+ for(let i=0;i<3;i++)drop(840+i*50,790+((t*70+i*60)%240),14);X.restore();
+ if(!f)rays(540,960,t,46,520,'#ffffff',.35);vig(.55)},
+(t,tp,p)=>{const sx=rnd(Math.floor(t*20))*6-3;cam(1+.08*p,700,1000,sx,0);room(t,'n');shade(t,880,1380,1.05,ez(tp/1.2),true);bed();lyingMan(t,.9,1,true,Math.sin(t*3)*8);blanket(t);foot();mist(t);
+ if(tp<.1){X.fillStyle='rgba(255,60,80,.8)';X.fillRect(0,0,1080,1920)}vig(.8)},
+(t,tp,p)=>{const g=X.createLinearGradient(0,0,0,1920);g.addColorStop(0,'#3a1f7a');g.addColorStop(1,'#0c1740');X.fillStyle=g;X.fillRect(0,0,1080,1920);
+ rays(540,960,t,36,300,'#ffd23f',.22);const s=ez(tp/.3)*(1+.05*Math.sin(tp*3));X.save();X.translate(540,960);X.rotate(-.05);X.scale(s,s);
+ txt('SLEEP',0,-90,170,'#ffffff','#0a0a14');txt('PARALYSIS',0,80,138,'#ffd23f','#0a0a14');X.restore();
+ if(tp<.4){X.fillStyle=`rgba(255,255,255,${1-tp/.4})`;X.fillRect(0,0,1080,1920)}},
+(t,tp,p)=>{const g=X.createLinearGradient(0,0,0,1920);g.addColorStop(0,'#07102a');g.addColorStop(1,'#0e1d4a');X.fillStyle=g;X.fillRect(0,0,1080,1920);
+ X.strokeStyle='rgba(53,224,255,.09)';X.lineWidth=2;for(let i=0;i<1080;i+=90){X.beginPath();X.moveTo(i,0);X.lineTo(i,1920);X.stroke()}for(let i=0;i<1920;i+=90){X.beginPath();X.moveTo(0,i);X.lineTo(1080,i);X.stroke()}
+ chip('REM SLEEP',540,300,560,'#ffd23f');
+ for(let i=0;i<3;i++){const r=((tp*.5+i/3)%1)*520;X.strokeStyle=`rgba(53,224,255,${1-r/520})`;X.lineWidth=6;X.beginPath();X.arc(540,740,150+r,0,7);X.stroke()}
+ brain(540,740,1.1,'rgba(53,224,255,.45)',t,.03*Math.sin(t*4)+.05*lv(t));eyeIcon(540,1120,Math.sin(t*5)*55);
+ ol(6);X.strokeStyle='#35e0ff';X.beginPath();X.moveTo(100,1650);X.lineTo(980,1650);X.moveTo(100,1650);X.lineTo(100,1330);X.stroke();
+ const wy=x=>1500-80*Math.sin(x*.011)-(x>560&&x<760?120:0);X.beginPath();for(let x=100;x<=980;x+=8)X.lineTo(x,wy(x));X.strokeStyle='#8fa6ff';X.lineWidth=8;X.stroke();
+ X.beginPath();for(let x=560;x<=760;x+=8)X.lineTo(x,wy(x));X.strokeStyle='#ffd23f';X.lineWidth=12;X.stroke();txt('REM',660,1320,38,'#ffd23f','#0a0a14');
+ const mx=100+p*880;X.fillStyle='#fff';X.beginPath();X.arc(mx,wy(mx),16,0,7);X.fill();ol(5);X.stroke()},
+(t,tp,p)=>{X.fillStyle='#07102a';X.fillRect(0,0,1080,1920);X.fillStyle='#0b1a44';X.fillRect(0,960,1080,960);
+ brain(540,430,.85,'rgba(255,210,63,.6)',t,.04*Math.sin(t*9));rays(540,430,t,18,260,'#ffd23f',.14);chip('สมองตื่นแล้ว',540,140,520,'#ffd23f');
+ ol(10);X.strokeStyle='#35e0ff';X.beginPath();X.moveTo(540,570);X.lineTo(540,1215);X.stroke();
+ for(let i=0;i<4;i++){const y=600+((t*220+i*160)%620);X.globalAlpha=y>1100?Math.max(0,1-(y-1100)/115):1;X.fillStyle='#ffd23f';X.beginPath();X.arc(540,y,16,0,7);X.fill()}X.globalAlpha=1;
+ X.fillStyle='#ff3b55';rr(400,1215,280,26,10);X.fill();
+ ol();el(540,1330,64,70);fs('#F0C39F');rr(450,1390,180,330,50);fs('#164E91');rr(380,1400,70,300,34);fs('#164E91');rr(630,1400,70,300,34);fs('#164E91');rr(455,1700,80,200,30);fs('#17233C');rr(545,1700,80,200,30);fs('#17233C');
+ X.globalAlpha=.55+.25*Math.sin(t*4);X.fillStyle='#ff7a45';for(const[x,y,w,h]of[[395,1420,40,240],[645,1420,40,240],[470,1420,140,200],[465,1720,50,150],[565,1720,50,150]]){rr(x,y,w,h,18);X.fill()}X.globalAlpha=1;
+ chip('กล้ามเนื้อถูกยับยั้ง',540,1000,780,'#ff7a45');X.setLineDash([24,16]);X.strokeStyle='#ffd23f';X.lineWidth=6;X.beginPath();X.moveTo(0,960);X.lineTo(1080,960);X.stroke();X.setLineDash([])},
+(t,tp,p)=>{cam(1.12-.12*p,540,1000);room(t,'n');const a=.85*(1-ez(p*1.3));shade(t,880,1380,1.05+.4*p,a,true);bed();lyingMan(t,.9,p>.7?0:1,p<.7,Math.sin(t*3)*8);blanket(t);foot();mist(t);
+ for(let i=0;i<5;i++){if(rnd(Math.floor(t*10)+i*13)>.78&&p<.8){X.fillStyle=i%2?'rgba(53,224,255,.25)':'rgba(255,60,200,.22)';X.fillRect(0,rnd(i+Math.floor(t*10))*1900,1080,20+rnd(i)*60)}}
+ const w=ez((p-.6)/.4)*.35;X.fillStyle=`rgba(255,220,150,${w})`;X.fillRect(0,0,1080,1920);vig(.5*(1-p*.6))},
+(t,tp,p)=>{cam(1.12-.12*p,540,1000);room(t,'m');bed();const sit=ez(tp/1.5),hy=1080-190*sit,hx=290+20*sit;
+ ol();rr(hx-95,hy+80,190,1260-hy-80,60);fs('#164E91');head(hx,hy,95,(t%3.2)<.12?0:1,2,t,false);blanket(t);foot();
+ X.fillStyle='rgba(255,235,160,.12)';X.beginPath();X.moveTo(620,240);X.lineTo(1000,240);X.lineTo(1080,1400);X.lineTo(300,1400);X.fill();
+ if(p>.85){X.fillStyle=`rgba(8,13,24,${(p-.85)/.15*.6})`;X.fillRect(0,0,1080,1920)}}
+];
+
+/* ---------- render ---------- */
+function render(t){const W=C.width,H=C.height,i=sceneAt(t),s1=i<7?starts[i+1]:dur,tp=t-starts[i],p=Math.min(1,tp/Math.max(.01,s1-starts[i]));
+ X.setTransform(1,0,0,1,0,0);X.fillStyle=G.base[i];X.fillRect(0,0,W,H);
+ const k=Math.min(W/1080,H/1920);X.setTransform(k,0,0,k,(W-1080*k)/2,(H-1920*k)/2);
+ X.save();X.beginPath();X.rect(0,0,1080,1920);X.clip();SC[i](t,tp,p);
+ if(i!=3&&tp<.25){X.fillStyle=`rgba(0,0,0,${1-ez(tp/.25)})`;X.fillRect(0,0,1080,1920)}
+ if(i==7&&t>dur-.8){X.fillStyle=`rgba(8,13,24,${Math.min(1,(t-dur+.8)/.8)*.4})`;X.fillRect(0,0,1080,1920)}
+ X.restore();X.setTransform(1,0,0,1,0,0);
+ if(showSafe&&!exporting){X.strokeStyle='#7dff7d';X.lineWidth=3;X.setLineDash([14,10]);X.strokeRect(W*.06,H*.12,W*.88,H*(fmt=='16:9'?.76:.68));X.setLineDash([])}}
+
+/* ---------- UI ---------- */
+function ui(){$('pp').textContent=playing?'⏸ หยุด':'▶ เล่น';$('pp').setAttribute('aria-label',playing?'หยุด':'เล่น');$('mute').textContent=muted?'🔇':'🔊';
+ $('exp').disabled=exporting;$('cancel').disabled=!exporting;$('safe').classList.toggle('on',showSafe)}
+function chips(){$('chips').innerHTML='';G.scenes.forEach((n,i)=>{const b=document.createElement('button');b.textContent='S'+(i+1);b.title=n;b.onclick=()=>seek(starts[i]+.01);b.id='ch'+i;$('chips').appendChild(b)})}
+function fmts(){$('fmts').innerHTML='';for(const k in FM){const b=document.createElement('button');b.textContent=k;b.className=k==fmt?'on':'';b.onclick=()=>{fmt=k;fmts();size()};$('fmts').appendChild(b)}
+ $('qs').innerHTML='';for(const v of[720,1080]){const b=document.createElement('button');b.textContent=v+'p';b.className=v==q?'on':'';b.onclick=()=>{q=v;fmts();size()};$('qs').appendChild(b)}}
+function size(){if(exporting)return;const[w,h]=dims(720);C.width=w;C.height=h;const[ew,eh]=dims(q);$('osz').textContent=`ส่งออก ${ew}×${eh} · 30 fps · พรีวิวแสดงที่ ${w}×${h}`}
+function renderSync(){const d=$('sync');d.innerHTML='';G.scenes.forEach((n,i)=>{const e=i<7?starts[i+1]:dur,r=document.createElement('div');r.className='sr';
+ r.innerHTML=`<b>S${i+1} ${n}</b><span>${starts[i].toFixed(1)}–${e.toFixed(1)}s<br>${stat[i]}</span>`;
+ if(i>0)for(const dl of[-.1,.1]){const b=document.createElement('button');b.textContent=(dl>0?'+':'−')+'0.1';b.onclick=()=>{const lo=starts[i-1]+.3,hi=(i<7?starts[i+1]:dur)-.3;starts[i]=Math.max(lo,Math.min(hi,starts[i]+dl));stat[i]='ปรับด้วยมือ';seek(starts[i]+.02);renderSync()};r.appendChild(b)}
+ d.appendChild(r)})}
+function loop(){const t=now();if(playing&&!exporting&&t>=dur)pause(dur);const tt=Math.min(t,dur-.001);render(tt);
+ if(!exporting){$('seek').value=Math.round(tt/dur*1000);$('tm').textContent=fmtT(tt)+' / '+fmtT(dur)}
+ const i=sceneAt(tt);for(let k=0;k<8;k++){const c=$('ch'+k);if(c)c.classList.toggle('on',k==i)}
+ $('sstat').textContent=`ฉาก ${i+1}: ${G.scenes[i]} · ${buf?'ซิงก์โดยประมาณจากเสียงจริง':'เวลาโดยประมาณ ยังไม่ซิงก์กับเสียงจริง'}`;requestAnimationFrame(loop)}
+
+/* ---------- export ---------- */
+async function doExport(){
+ if(exporting)return;if(!buf)return err('กรุณานำเข้าไฟล์เสียงพากย์ก่อนสร้างวิดีโอ');
+ if(!window.MediaRecorder||!C.captureStream)return err('เบราว์เซอร์นี้ไม่รองรับการบันทึกวิดีโอ (MediaRecorder/captureStream) ลองใช้ Chrome หรือ Safari รุ่นใหม่');
+ const mime=['video/mp4;codecs=avc1,mp4a.40.2','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'].find(m=>MediaRecorder.isTypeSupported(m));
+ if(!mime)return err('ไม่พบรูปแบบวิดีโอที่เบราว์เซอร์รองรับ');
+ err('');exporting=true;cancelFlag=false;let rec,vs;ui();
+ try{await document.fonts.ready;try{wake=await navigator.wakeLock.request('screen')}catch(e){}
+  pause(0);ensureCtx();await actx.resume();const[w,h]=dims(q);C.width=w;C.height=h;
+  vs=C.captureStream(30);vs.addTrack(dest.stream.getAudioTracks()[0]);
+  rec=new MediaRecorder(vs,{mimeType:mime,videoBitsPerSecond:q==1080?10e6:6e6});const ch=[];rec.ondataavailable=e=>{if(e.data.size)ch.push(e.data)};
+  const stopped=new Promise(r=>rec.onstop=r);const T0=performance.now(),total=Math.ceil((dur+.4)*30);
+  rec.start(500);play(0);
+  await new Promise(res=>{const iv=setInterval(()=>{const t=now(),pc=Math.min(99,t/(dur+.4)*100);$('pb').style.width=pc+'%';
+   $('pinfo').textContent=`${mime.split(';')[0]} · ${pc.toFixed(0)}% · เฟรมประมาณ ${Math.floor(t*30)}/${total} · ใช้เวลา ${((performance.now()-T0)/1000).toFixed(0)} วินาที (อย่าปิดหน้านี้)`;
+   if(cancelFlag||t>=dur+.4){clearInterval(iv);res()}},100)});
+  pause();rec.stop();await stopped;vs.getTracks().forEach(x=>x.stop());
+  if(cancelFlag){$('pinfo').textContent='ยกเลิกการสร้างวิดีโอแล้ว';$('pb').style.width='0';return}
+  const type=mime.split(';')[0],b=new Blob(ch,{type});if(b.size<2000)throw new Error('ไฟล์ว่าง');
+  const url=URL.createObjectURL(b);let d;try{d=await new Promise((res,rej)=>{const v=document.createElement('video');const to=setTimeout(()=>rej(new Error('timeout')),10000);
+   v.preload='metadata';v.muted=true;v.onloadedmetadata=()=>{clearTimeout(to);res(v.duration)};v.onerror=()=>{clearTimeout(to);rej(new Error('เปิดไฟล์ผลลัพธ์ไม่ได้'))};v.src=url})}catch(e){URL.revokeObjectURL(url);throw e}
+  if(rurl)URL.revokeObjectURL(rurl);rurl=url;blob=b;blob.ext=type.includes('mp4')?'mp4':'webm';
+  $('rv').src=url;$('res').style.display='block';
+  $('rinfo').textContent=`sleep_paralysis_${fmt.replace(':','x')}.${blob.ext} · ${(b.size/1048576).toFixed(2)} MB · ${w}×${h} · ${fmt} · 30 fps · ${type} · ${isFinite(d)?d.toFixed(1):dur.toFixed(1)} วินาที`;
+  $('pb').style.width='100%';$('pinfo').textContent='สร้างวิดีโอสำเร็จ (ตรวจแล้วว่าเปิดไฟล์ได้)';$('res').scrollIntoView({behavior:'smooth'})}
+ catch(e){err('สร้างวิดีโอไม่สำเร็จ: '+(e.message||e)+' — ลองลดเป็น 720p และเปิดหน้านี้ค้างไว้จนเสร็จ');$('pb').style.width='0'}
+ finally{exporting=false;try{wake&&wake.release()}catch(e){}pause();size();ui()}}
+const fname=()=>`sleep_paralysis_${fmt.replace(':','x')}.${blob.ext}`;
+function dl(){const a=document.createElement('a');a.href=rurl;a.download=fname();document.body.appendChild(a);a.click();a.remove()}
+
+/* ---------- wiring ---------- */
+$('file').onchange=e=>{const f=e.target.files[0];if(f)loadFile(f)};
+$('pp').onclick=()=>{playing?pause():play(now()>=dur-.05?0:now())};
+$('seek').oninput=e=>seek(e.target.value/1000*dur);
+$('mute').onclick=()=>{muted=!muted;ensureCtx();gPrev.gain.value=muted?0:1;ui()};
+$('safe').onclick=()=>{showSafe=!showSafe;ui()};
+$('fs').onclick=()=>{const p=C.parentElement,f=p.requestFullscreen||p.webkitRequestFullscreen;f?f.call(p):err('อุปกรณ์นี้ไม่รองรับโหมดเต็มจอสำหรับพรีวิว')};
+$('exp').onclick=doExport;$('cancel').onclick=()=>{cancelFlag=true};
+$('rplay').onclick=()=>$('rv').play();$('again').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
+$('share').onclick=async()=>{if(!blob)return;const f=new File([blob],fname(),{type:blob.type});
+ if(navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f]})}catch(e){}}else dl()};
+if(!(window.AudioContext||window.webkitAudioContext))err('เบราว์เซอร์นี้ไม่รองรับ Web Audio จึงนำเข้าเสียงไม่ได้');
+if(!C.getContext||!X)err('Canvas ใช้งานไม่ได้บนเบราว์เซอร์นี้');
+chips();fmts();size();renderSync();ui();loop();
+</script></body></html>
